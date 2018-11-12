@@ -20,6 +20,7 @@ import * as FieldReviewRating from './components/FieldReviewRating/FieldReviewRa
 import * as FieldSelect from './components/FieldSelect/FieldSelect.example';
 import * as FieldTextInput from './components/FieldTextInput/FieldTextInput.example';
 import * as FilterPlain from './components/FilterPlain/FilterPlain.example';
+import * as FilterPopup from './components/FilterPopup/FilterPopup.example';
 import * as Footer from './components/Footer/Footer.example';
 import * as IconBannedUser from './components/IconBannedUser/IconBannedUser.example';
 import * as IconCheckmark from './components/IconCheckmark/IconCheckmark.example';
@@ -119,6 +120,7 @@ export {
   FieldTextInput,
   FilterForm,
   FilterPlain,
+  FilterPopup,
   Footer,
   IconBannedUser,
   IconCheckmark,
