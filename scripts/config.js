@@ -3,102 +3,137 @@ const fs = require('fs');
 const readline = require('readline');
 const chalk = require('chalk');
 
-const mandatoryVariables = [
-  {
-    type: 'input',
-    name: 'REACT_APP_SHARETRIBE_SDK_CLIENT_ID',
-    message: `What is your Flex client ID?
-${chalk.dim(
-      'Client ID is needed for connecting with Flex API. You can find your client ID from Flex Console.'
-    )}
-`,
-    validate: function(value) {
-      if (value.match(/^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$/i)) {
-        return true;
-      }
-      return 'Please enter valid Flex Client ID. You can check it form Flex Console!';
-    },
-  },
-  {
-    type: 'input',
-    name: 'REACT_APP_STRIPE_PUBLISHABLE_KEY',
-    message: `What is your Stripe publishable key?
-${chalk.dim(
-      `Stripe publishable API key is for generating tokens with Stripe API. Use test key (prefix pk_test_) for development. The secret key needs to be added to Flex Console. 
-If you don't set the Stripe key, payment's won't work in the application.`
-    )}
-`,
-    validate: function(value) {
-      if (value.match(/^pk_/)) {
-        return true;
-      }
-      return 'Please enter Stripe publishable key with prefix pk_!';
-    },
-  },
-  {
-    type: 'input',
-    name: 'REACT_APP_MAPBOX_ACCESS_TOKEN',
-    message: `What is your Mapbox access token?
-${chalk.dim(
-      `Mapbox is the default map provider of the application. Sign up for Mapbox and go the to account page. Then click Create access token. For more information see the: Integrating to map providers documentation.
-If you don't set the Mapbox key, the map components won't work in the application.`
-    )}
-`,
-  },
-];
+const mandatoryVariables = settings => {
+  const clientIdDefault = settings
+    ? { default: settings.REACT_APP_SHARETRIBE_SDK_CLIENT_ID }
+    : undefined;
+  const stirpeDefault = settings
+    ? { default: settings.REACT_APP_STRIPE_PUBLISHABLE_KEY }
+    : undefined;
+  const mapBoxDefault = settings ? { default: settings.REACT_APP_MAPBOX_ACCESS_TOKEN } : undefined;
+  const currencyDefault = settings ? settings.REACT_APP_SHARETRIBE_MARKETPLACE_CURRENCY : null;
 
-const defaultVariables = [
-  {
-    type: 'input',
-    name: 'REACT_APP_SHARETRIBE_MARKETPLACE_CURRENCY',
-    message: `What is your marketplace currency?
+  return [
+    {
+      type: 'input',
+      name: 'REACT_APP_SHARETRIBE_SDK_CLIENT_ID',
+      message: `What is your Flex client ID?
 ${chalk.dim(
-      'The currency used in the Marketplace must be in ISO 4217 currency code. For example USD, EUR, CAD, AUD, etc. The default value is USD.'
-    )} 
+        'Client ID is needed for connecting with Flex API. You can find your client ID from Flex Console.'
+      )}
 `,
-    default: function() {
-      return 'USD';
+      validate: function(value) {
+        if (value.match(/^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$/i)) {
+          return true;
+        }
+        return 'Please enter valid Flex Client ID. You can check it form Flex Console!';
+      },
+      ...clientIdDefault,
     },
-    validate: function(value) {
-      if (value.match(/^[a-zA-Z]{3}$/)) {
-        return true;
-      }
-      return 'Please enter currency in ISO 4217 format (e.g. USD, EUR, CAD...)';
+    {
+      type: 'input',
+      name: 'REACT_APP_STRIPE_PUBLISHABLE_KEY',
+      message: `What is your Stripe publishable key?
+${chalk.dim(
+        `Stripe publishable API key is for generating tokens with Stripe API. Use test key (prefix pk_test_) for development. The secret key needs to be added to Flex Console. 
+If you don't set the Stripe key, payment's won't work in the application.`
+      )}
+`,
+      validate: function(value) {
+        if (value.match(/^pk_/)) {
+          return true;
+        }
+        return 'Please enter Stripe publishable key with prefix pk_!';
+      },
+      ...stirpeDefault,
     },
-  },
-  {
-    type: 'input',
-    name: 'REACT_APP_CANONICAL_ROOT_URL',
-    message: `What is your canonical root URL? 
+    {
+      type: 'input',
+      name: 'REACT_APP_MAPBOX_ACCESS_TOKEN',
+      message: `What is your Mapbox access token?
 ${chalk.dim(
-      'Canonical root URL of the marketplace is needed for social media sharing and SEO optimization. When developing the template application locally URL is usually http://localhost:3000'
-    )}
+        `Mapbox is the default map provider of the application. Sign up for Mapbox and go the to account page. Then click Create access token. For more information see the: Integrating to map providers documentation.
+If you don't set the Mapbox key, the map components won't work in the application.`
+      )}
 `,
-    default: function() {
-      return 'http://localhost:3000';
+      ...mapBoxDefault,
     },
-  },
-  {
-    type: 'confirm',
-    name: 'REACT_APP_AVAILABILITY_ENABLED',
-    message: `Do you want to enable availability calendar?
+    {
+      type: 'input',
+      name: 'REACT_APP_SHARETRIBE_MARKETPLACE_CURRENCY',
+      message: `What is your marketplace currency?
 ${chalk.dim(
-      'This setting enables the Availability Calendar for listings. The default value for this setting is true.'
-    )}
+        'The currency used in the Marketplace must be in ISO 4217 currency code. For example USD, EUR, CAD, AUD, etc. The default value is USD.'
+      )} 
 `,
-    default: true,
-  },
-  {
-    type: 'confirm',
-    name: 'REACT_APP_DEFAULT_SEARCHES_ENABLED',
-    message: `Do you want to enable default search suggestions?
+      default: function() {
+        return currencyDefault ? currencyDefault : 'USD';
+      },
+      validate: function(value) {
+        if (value.match(/^[a-zA-Z]{3}$/)) {
+          return true;
+        }
+        return 'Please enter currency in ISO 4217 format (e.g. USD, EUR, CAD...)';
+      },
+    },
+  ];
+};
+
+const advancedSettings = settings => {
+  const rootUrlDefault = settings ? settings.REACT_APP_AVAILABILITY_ENABLED : null;
+  const availabilityDefault = settings ? settings.REACT_APP_AVAILABILITY_ENABLED : null;
+  const searchesDefault = settings ? settings.REACT_APP_AVAILABILITY_ENABLED : null;
+
+  return [
+    {
+      type: 'confirm',
+      name: 'showAdvancedSettings',
+      message: 'Do you want to edit advanced settings?',
+      default: false,
+    },
+    {
+      type: 'input',
+      name: 'REACT_APP_CANONICAL_ROOT_URL',
+      message: `What is your canonical root URL? 
 ${chalk.dim(
-      'This setting enables the Default Search Suggestions in location autocomplete search input. The default value for this setting is true.'
-    )}
+        'Canonical root URL of the marketplace is needed for social media sharing and SEO optimization. When developing the template application locally URL is usually http://localhost:3000'
+      )}
 `,
-    default: true,
-  },
-];
+      default: function() {
+        return rootUrlDefault ? rootUrlDefault : 'http://localhost:3000';
+      },
+      when: function(answers) {
+        return answers.showAdvancedSettings;
+      },
+    },
+    {
+      type: 'confirm',
+      name: 'REACT_APP_AVAILABILITY_ENABLED',
+      message: `Do you want to enable availability calendar?
+${chalk.dim(
+        'This setting enables the Availability Calendar for listings. The default value for this setting is true.'
+      )}
+`,
+      default: availabilityDefault ? availabilityDefault : true,
+      when: function(answers) {
+        return answers.showAdvancedSettings;
+      },
+    },
+    {
+      type: 'confirm',
+      name: 'REACT_APP_DEFAULT_SEARCHES_ENABLED',
+      message: `Do you want to enable default search suggestions?
+${chalk.dim(
+        'This setting enables the Default Search Suggestions in location autocomplete search input. The default value for this setting is true.'
+      )}
+`,
+      default: searchesDefault ? searchesDefault : true,
+      when: function(answers) {
+        return answers.showAdvancedSettings;
+      },
+    },
+  ];
+};
 
 const updateEnvFile = data => {
   let content = '';
@@ -121,6 +156,22 @@ const checkIfSameLine = (answers, line) => {
   return foundKey;
 };
 
+const getData = values => {
+  const { lines, answers } = values;
+
+  const data = [];
+  lines.map(line => {
+    const key = checkIfSameLine(answers, line);
+    if (key) {
+      data.push(`${key}=${answers[key]}\n`);
+    } else {
+      data.push(`${line}\n`);
+    }
+  });
+
+  return data;
+};
+
 // Read all lines from existing .env file to array. If line matches one of the keys in user's answers update add value to that line. Otherwise keep the original line.
 const readLines = answers => {
   return new Promise((resolve, reject) => {
@@ -128,18 +179,14 @@ const readLines = answers => {
       input: require('fs').createReadStream('./.env'),
     });
 
-    const data = [];
+    const lines = [];
     rl.on('line', function(line) {
-      const key = checkIfSameLine(answers, line);
-      if (key) {
-        data.push(`${key}=${answers[key]}\n`);
-      } else {
-        data.push(`${line}\n`);
-      }
+      lines.push(line);
     });
 
     rl.on('close', () => {
-      resolve(data);
+      const values = { answers, lines };
+      resolve(values);
     });
   });
 };
@@ -151,6 +198,62 @@ const createEnvFile = () => {
   });
 };
 
+const findSavedValues = () => {
+  const savedEnvFile = fs.readFileSync('./.env').toString();
+
+  const settings = savedEnvFile.split('\n').reduce((obj, line) => {
+    const splits = line.split('=');
+    const key = splits[0];
+    if (splits.length > 1) {
+      obj[key] = splits.slice(1).join('=');
+    }
+    return obj;
+  }, {});
+
+  return settings;
+};
+
+const askQuestions = settings => {
+  inquirer
+    .prompt(mandatoryVariables(settings))
+    .then(answers => {
+      return readLines(answers);
+    })
+    .then(values => {
+      const data = getData(values);
+      updateEnvFile(data);
+
+      console.log(chalk.yellow.bold(`Advanced settings:`));
+      inquirer
+        .prompt(advancedSettings(settings))
+        .then(answers => {
+          return readLines(answers);
+        })
+        .then(values => {
+          const data = getData(values);
+          updateEnvFile(data);
+          console.log(`
+${chalk.green.bold('Environment variables saved succesfully!')} 
+
+Start the Flex template application by running ${chalk.bold.cyan('yarn run dev')}
+
+Note that the .env file is a hidden file so it might not be visible directly in directory listing. If you want to update the environment variables run ${chalk.cyan.bold(
+            'yarn run config'
+          )} again or edit the .env file directly. Remember to restart the application after editing the environment variables! 
+        `);
+        });
+    })
+    .catch(err => {
+      console.log(chalk.red(`An error occurred due to: ${err.message}`));
+    });
+};
+
+const checkRequiredValues = () => {
+  const settings = findSavedValues();
+  const hasClientID = settings && settings.REACT_APP_SHARETRIBE_SDK_CLIENT_ID !== '';
+  const hasStripeKey = settings && settings.REACT_APP_STRIPE_PUBLISHABLE_KEY !== '';
+  const hasMapBoxKey = settings && settings.REACT_APP_MAPBOX_ACCESS_TOKEN !== '';
+};
 const run = () => {
   if (process.argv[2] && process.argv[2] === '--check') {
     if (!fs.existsSync(`./.env`)) {
@@ -170,42 +273,31 @@ Some environment variables are required before starting the app. You can create 
     }
   } else if (fs.existsSync(`./.env`)) {
     console.log(`
-.env file already exists. You can edit the variables directly from the file. Remember to restart the application after editing the environment variables!
-
+${chalk.bold('.env file already exists!')} 
+You can also edit the variables directly from the file. Remember to restart the application after editing the environment variables!
     `);
-  } else {
-    createEnvFile();
-
-    console.log(chalk.yellow.bold(`Required variables:`));
 
     inquirer
-      .prompt(mandatoryVariables)
+      .prompt([
+        {
+          type: 'confirm',
+          name: 'editEnvFile',
+          message: 'Do you want to edit the .env file?',
+          default: false,
+        },
+      ])
       .then(answers => {
-        return readLines(answers);
-      })
-      .then(data => {
-        updateEnvFile(data);
+        if (answers.editEnvFile) {
+          const settings = findSavedValues();
 
-        console.log(chalk.yellow.bold(`Variables with default values:`));
-        inquirer
-          .prompt(defaultVariables)
-          .then(answers => {
-            return readLines(answers);
-          })
-          .then(data => {
-            updateEnvFile(data);
-            console.log(`
-${chalk.green.bold('Environment variables saved succesfully!')} 
-  
-Note that the .env file is a hidden file so it might not be visible directly in directory listing. If you want to update the environment variables you need to edit the file. Remember to restart the application after editing the environment variables! 
-  
-Start the Flex template application by running ${chalk.bold.cyan('yarn run dev')}
-          `);
-          });
-      })
-      .catch(err => {
-        console.log(chalk.red(`An error occurred due to: ${err.message}`));
+          console.log('Settings:', settings);
+
+          askQuestions(settings);
+        }
       });
+  } else {
+    createEnvFile();
+    askQuestions();
   }
 };
 
